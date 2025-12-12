@@ -1,0 +1,15 @@
+[Unit]
+Description=Companion app to enable push notifications via mobileraker
+After=network-online.target moonraker.service
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+User=%USER%
+WorkingDirectory=%HOME%/mobileraker_companion
+EnvironmentFile=%HOME%/printer_data/systemd/mobileraker.env
+ExecStart=%HOME%/mobileraker-env/bin/python $MOBILERAKER_ARGS
+Restart=always
+RestartSec=10

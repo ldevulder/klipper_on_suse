@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+
+# Error function
+function error() {
+  echo -e "$@" >&2
+  exit 1
+}
+
+# Set debug mode if needed
+(( DEBUG )) && declare debug="echo "
+(( DEBUG == 2 )) && set -x
+
+# Variable(s)
+declare run_dir=$(dirname $0)
+declare fqdn=$(hostnamectl hostname)
+declare selinux=$(sestatus | awk '/^Current mode:/ { print $NF }')
+declare mainsail_htdocs="/srv/www/htdocs/mainsail"
+declare tmp_ms_file="/tmp/mainsail.zip"
+declare ms_webpages_url="https://github.com/mainsail-crew/mainsail/releases/latest/download/mainsail.zip"
+declare git_repos="
+  Klipper3d/klipper.git
+  Arksine/moonraker.git
+  mainsail-crew/mainsail-config.git
+  Clon1998/mobileraker_companion.git"
+
+# Only with 'klipper' user
+[[ "${USER}" != 'klipper' ]] \
+  && error "User 'klipper' should be used!"
+
+# SELinux should be in permissive mode or disabled
+[[ -n "${selinux}" && "${selinux}" != "permissive" ]] \
+  && error "SELinux should be in permissive mode or disabled!"
+
+# A valid FQDN is needed
+[[ -z "${fqdn}" || "${fqdn}" =~ "localhost" ]] \
+  && error "'${fqdn}' is not a valid hostname!"
+
+## Install dependencies
+${debug} sudo zypper -n install git-core nginx
+
+# Stop nginx as we have to change the configuration
+${debug} sudo systemctl stop nginx
+
+# Clone repositories
+pushd ~ >/dev/null
+for git_repo in ${git_repos}; do
+  ${debug} git clone https://github.com/${git_repo}
+done
+popd >/dev/null
+
+# Create printer_data tree
+for dir in certs comms config database gcodes logs misc systemd; do
+  ${debug} mkdir -p ~/printer_data/${dir}
+done
+
+# Copy patches/fixes
+${debug} cp ${run_dir}/scripts/install-opensuse.sh ~/klipper/scripts/
+${debug} cp ${run_dir}/scripts/install-moonraker.sh ~/moonraker/scripts/
+${debug} cp ${run_dir}/scripts/install-mobileraker.sh ~/mobileraker_companion/scripts/install.sh
+
+## Install/Configure Klipper
+${debug} ~/klipper/scripts/install-opensuse.sh
+
+# Stop it as we have to change the configuration
+${debug} sudo systemctl stop klipper
+
+# Copy configuration example
+${debug} cp ${run_dir}/examples/printer.cfg ~/printer_data/config
+
+# Reload systemd daemon manager
+${debug} sudo systemctl daemon-reload
+
+## Install/Configure Moonraker
+${debug} ~/moonraker/scripts/install-moonraker.sh
+
+# Stop it as we have to change the configuration
+${debug} sudo systemctl stop moonraker
+
+# Copy Moonraker configuration
+${debug} cp ${run_dir}/conf/moonraker.conf ~/printer_data/config
+
+# Add current user to Moonraker admin group and other needed groups
+${debug} sudo usermod -a -G moonraker-admin,dialout ${USER}
+
+## Install/Configure Mobileraker Companion
+${debug} ~/mobileraker_companion/scripts/install.sh
+
+# Stop it as we have to change the configuration
+${debug} sudo systemctl stop mobileraker
+
+# Copy Mobileraker configuration
+${debug} cp ${run_dir}/conf/mobileraker.conf ~/printer_data/config
+
+## Patch/Configure system
+
+# Patch Klipper/Moonraker/Mobileraker systemd services
+  for svc_name in klipper moonraker mobileraker; do
+  new_svc=$(sed -e "s/%USER%/${USER}/g" \
+                -e "s;%HOME%;${HOME};" ${run_dir}/systemd/${svc_name}.service)
+  if [[ -n "${new_svc}" ]]; then
+    ${debug} sudo bash -c "echo '${new_svc}' >/etc/systemd/system/${svc_name}.service"
+    ${debug} sed "s;%HOME;${HOME};/g" ${run_dir}/env/${svc_name}.env >~/printer_data/systemd/${svc_name}.env
+  fi
+done
+
+# Copy PolicyKit
+${debug} sudo rm -f /etc/polkit-1/rules.d/*moonraker*
+${debug} sudo cp ${run_dir}/polkit/10-moonraker.rules /etc/polkit-1/rules.d
+
+# Add permissions for sudo command
+${debug} sudo cp ${run_dir}/sudoers/moonraker /etc/sudoers.d
+${debug} sudo chown root:root /etc/sudoers.d/moonraker
+${debug} sudo chmod 600 /etc/sudoers.d/moonraker
+
+# Reload systemd daemon manager and restart polkit service
+${debug} sudo systemctl daemon-reload
+${debug} sudo systemctl restart polkit
+
+## Install/Configure Mainsail
+new_conf=$(sed "s/%FQDN%/${fqdn}/g" ${run_dir}/nginx-conf/mainsail.conf)
+[[ -n "${new_conf}" ]] \
+  && ${debug} sudo bash -c "echo '${new_conf}' >/etc/nginx/conf.d/mainsail.conf"
+${debug} sudo cp ${run_dir}/nginx-conf/nginx.conf /etc/nginx
+for conf in common_vars upstreams; do
+  ${debug} sudo cp ${run_dir}/nginx-conf/${conf}.conf /etc/nginx/conf.d
+done
+
+# Install default configuration and macros
+${debug} cp ~/mainsail-config/mainsail.cfg ~/printer_data/config/mainsail.cfg
+
+# Install Mainsail Web pages
+${debug} wget -q -O ${tmp_ms_file} ${ms_webpages_url}
+${debug} sudo mkdir -p ${mainsail_htdocs}
+${debug} sudo unzip ${tmp_ms_file} -d ${mainsail_htdocs}
+${debug} rm -f ${tmp_ms_file}
+
+## Configure firewall
+if systemctl -q is-active firewalld; then
+  zone=$(firewall-cmd --get-default-zone)
+  firewall-cmd --zone=${zone} --add-service=http --permanent
+  firewall-cmd --zone=${zone} --add-service=https --permanent
+  firewall-cmd --reload
+fi
+
+## Start all services
+${debug} sudo systemctl enable --now klipper moonraker mobileraker nginx

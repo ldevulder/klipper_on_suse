@@ -1,0 +1,10 @@
+### Elevate moonraker API permissions
+### Do NOT allow Command Parts, only Full Commands
+### For example:
+### /sbin/systemctl "reboot", /sbin/apt "update", ...
+
+Cmnd_Alias REBOOT = /sbin/shutdown -r now, /usr/bin/systemctl "reboot"
+Cmnd_Alias SHUTDOWN = /sbin/shutdown now, /sbin/shutdown -h now, /usr/bin/systemctl "poweroff"
+Cmnd_Alias SYSTEMCTL = /usr/bin/systemctl
+
+klipper ALL=(ALL) NOPASSWD: REBOOT, SHUTDOWN, SYSTEMCTL
