@@ -137,9 +137,9 @@ ${debug} rm -f ${tmp_ms_file}
 ## Configure firewall
 if systemctl -q is-active firewalld; then
   zone=$(firewall-cmd --get-default-zone)
-  firewall-cmd --zone=${zone} --add-service=http --permanent
-  firewall-cmd --zone=${zone} --add-service=https --permanent
-  firewall-cmd --reload
+  sudo firewall-cmd --zone=${zone} --add-service=http --permanent
+  sudo firewall-cmd --zone=${zone} --add-service=https --permanent
+  sudo firewall-cmd --reload
 fi
 
 ## Start all services
