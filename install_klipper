@@ -99,7 +99,7 @@ ${debug} cp ${run_dir}/conf/mobileraker.conf ~/printer_data/config
                 -e "s;%HOME%;${HOME};" ${run_dir}/systemd/${svc_name}.service)
   if [[ -n "${new_svc}" ]]; then
     ${debug} sudo bash -c "echo '${new_svc}' >/etc/systemd/system/${svc_name}.service"
-    ${debug} sed "s;%HOME;${HOME};/g" ${run_dir}/env/${svc_name}.env >~/printer_data/systemd/${svc_name}.env
+    ${debug} sed "s;%HOME%;${HOME};/g" ${run_dir}/env/${svc_name}.env >~/printer_data/systemd/${svc_name}.env
   fi
 done
 
