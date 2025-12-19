@@ -226,17 +226,17 @@ system_deps = {
     "opensuse-leap": [
         "python3-virtualenv", "python3-devel", "libopenjp2-7", "libsodium-devel",
         "zlib-ng-compat-devel", "libjpeg8-devel", "PackageKit", "wireless-tools",
-        "python3-libcamera", "curl", "unzip",
+        "python3-libcamera", "curl", "unzip", "libsodium26",
     ],
     "opensuse-slowroll": [
         "python3-virtualenv", "python3-devel", "libopenjp2-7", "libsodium-devel",
         "zlib-ng-compat-devel", "libjpeg8-devel", "PackageKit", "wireless-tools",
-        "python3-libcamera", "curl", "unzip",
+        "python3-libcamera", "curl", "unzip", "libsodium26",
     ],
     "opensuse-tumbleweed": [
         "python3-virtualenv", "python3-devel", "libopenjp2-7", "libsodium-devel",
         "zlib-ng-compat-devel", "libjpeg8-devel", "PackageKit", "wireless-tools",
-        "python3-libcamera", "curl", "unzip",
+        "python3-libcamera", "curl", "unzip", "libsodium26",
     ],
 }
 # *** SYSTEM DEPENDENCIES END ***
