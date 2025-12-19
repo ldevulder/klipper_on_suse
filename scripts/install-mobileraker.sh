@@ -61,7 +61,7 @@ ENV_DIR="${HOME}/mobileraker-env"
 # The virtualenv is for our virtual package env we create
 # The curl requirement is for some things in this bootstrap script.
 if [ "$IS_SUSE_OS" -eq 1 ]; then
-    PKGLIST="python3 python3-pip python3-virtualenv curl"
+    PKGLIST="python3 python3-pip python3-virtualenv patterns-devel-python-devel_python3 curl"
 else
     PKGLIST="python3 python3-pip virtualenv curl"
 fi
