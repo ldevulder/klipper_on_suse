@@ -18,14 +18,9 @@ Tested on:
 
 ### Klipper group and user
 
-- A `klipper` group is needed:
+- Create `klipper` user/group:
 ```
-# groupadd klipper
-```
-
-- A `klipper` user is needed:
-```
-# useradd -d /home/klipper -g klipper -m klipper
+# useradd -U -m klipper
 ```
 
 ### Clone/Download repository
