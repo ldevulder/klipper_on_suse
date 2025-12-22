@@ -71,8 +71,7 @@ ${debug} cp ${run_dir}/examples/printer.cfg ~/printer_data/config
 ${debug} sudo systemctl daemon-reload
 
 ## Install deps for Measuring Resonances in Klipper
-${debug} ~/klippy-env/bin/pip install -v "numpy"
-${debug} ~/klippy-env/bin/python -c 'import numpy;'
+${debug} ~/klippy-env/bin/pip install -v numpy matplotlib
 
 ## Install/Configure Moonraker
 ${debug} ~/moonraker/scripts/install-moonraker.sh
