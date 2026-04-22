@@ -53,10 +53,11 @@ for dir in certs comms config database gcodes logs misc systemd; do
   ${debug} mkdir -p ~/printer_data/${dir}
 done
 
-# Copy patches/fixes
+# Copy patches/fixes if needed
 [[ ! -f ~/klipper/scripts/install-opensuse.sh ]] \
   && ${debug} cp ${run_dir}/scripts/install-opensuse.sh ~/klipper/scripts/
-${debug} cp ${run_dir}/scripts/install-moonraker.sh ~/moonraker/scripts/
+! grep -iq opensuse ~/moonraker/scripts/install-moonraker.sh \
+  && ${debug} cp ${run_dir}/scripts/install-moonraker.sh ~/moonraker/scripts/
 ${debug} cp ${run_dir}/scripts/install-mobileraker.sh ~/mobileraker_companion/scripts/install.sh
 
 ## Install/Configure Klipper
