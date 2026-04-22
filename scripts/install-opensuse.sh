@@ -4,6 +4,8 @@
 
 PYTHONDIR="${HOME}/klippy-env"
 SYSTEMDDIR="/etc/systemd/system"
+KLIPPER_USER=$USER
+KLIPPER_GROUP=$KLIPPER_USER
 
 # Step 1: Install system packages
 install_packages()
@@ -40,6 +42,7 @@ create_virtualenv()
 install_script()
 {
 # Create systemd service file
+    KLIPPER_LOG=/tmp/klippy.log
     report_status "Installing system start script..."
     sudo /bin/sh -c "cat > $SYSTEMDDIR/klipper.service" << EOF
 #Systemd service file for klipper
@@ -52,24 +55,20 @@ WantedBy=multi-user.target
 
 [Service]
 Type=simple
-User=$USER
+User=$KLIPPER_USER
 RemainAfterExit=yes
-ExecStart=${PYTHONDIR}/bin/python ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -l /var/log/klippy.log
+ExecStart=${PYTHONDIR}/bin/python ${SRCDIR}/klippy/klippy.py ${HOME}/printer.cfg -l ${KLIPPER_LOG}
 EOF
 # Use systemctl to enable the klipper systemd service script
     sudo systemctl enable klipper.service
+    report_status "Make sure to add $KLIPPER_USER to the user group controlling your serial printer port"
 }
 
-# Configuration for systemctl klipper
-
-KLIPPY_USER=$USER
-
-
-# Step 5: Start host software
+# Step 4: Start host software
 start_software()
 {
     report_status "Launching Klipper host software..."
-    sudo systemctl restart klipper
+    sudo systemctl start klipper
 }
 
 # Helper functions
